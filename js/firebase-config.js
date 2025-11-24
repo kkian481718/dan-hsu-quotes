@@ -5,6 +5,8 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCv9zuggv7imyJqj_bqkIXetS1pyz42aic",
   authDomain: "dan-hsu-quotes.firebaseapp.com",
+  databaseURL:
+    "https://dan-hsu-quotes-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "dan-hsu-quotes",
   storageBucket: "dan-hsu-quotes.firebasestorage.app",
   messagingSenderId: "386474452724",

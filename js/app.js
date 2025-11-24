@@ -139,37 +139,33 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyState.style.display = "none";
     quotesList.style.display = "none";
 
-    // 先載入 JSON 檔案中的預設語錄
-    fetch("data/quotes.json")
-      .then((response) => response.json())
-      .then((data) => {
-        const jsonQuotes = data.quotes || [];
-
-        // 設定 Firebase 即時監聽器
-        quotesRef.orderByChild("timestamp").on("value", (snapshot) => {
-          const firebaseQuotes = [];
-          snapshot.forEach((childSnapshot) => {
-            const data = childSnapshot.val();
-            firebaseQuotes.push({
-              id: childSnapshot.key,
-              quote: data.quote,
-              author: data.author,
-              timestamp: data.timestamp || 0,
-            });
+    // 設定 Firebase 即時監聽器
+    quotesRef.orderByChild("timestamp").on(
+      "value",
+      (snapshot) => {
+        const firebaseQuotes = [];
+        snapshot.forEach((childSnapshot) => {
+          const data = childSnapshot.val();
+          firebaseQuotes.push({
+            id: childSnapshot.key,
+            quote: data.quote,
+            author: data.author,
+            timestamp: data.timestamp || 0,
           });
-
-          // 合併 JSON 和 Firebase 的語錄，Firebase 的語錄放在後面（較新）
-          const allQuotes = [...jsonQuotes, ...firebaseQuotes.reverse()];
-          window.allQuotesData = allQuotes;
-          displayQuotes(allQuotes);
         });
-      })
-      .catch((error) => {
+
+        // 顯示 Firebase 的語錄（最新的在前面）
+        const allQuotes = firebaseQuotes.reverse();
+        window.allQuotesData = allQuotes;
+        displayQuotes(allQuotes);
+      },
+      (error) => {
         console.error("Error loading quotes:", error);
         loadingState.style.display = "none";
         showToast("❌", "載入語錄時發生錯誤", "error");
         displayQuotes([]);
-      });
+      }
+    );
   }
 
   function displayQuotes(quotes) {
