@@ -77,8 +77,7 @@ dan-hsu-quotes/
 │   └── style.css          # 樣式檔案
 ├── js/
 │   ├── firebase-config.js # Firebase 配置（需自行設定）
-│   ├── app.js             # 主要應用邏輯
-│   └── storage.js         # 儲存管理
+│   └── app.js             # 主要應用邏輯
 ├── data/
 │   └── quotes.json        # 預設語錄資料
 ├── FIREBASE_SETUP.md      # Firebase 設定教學
