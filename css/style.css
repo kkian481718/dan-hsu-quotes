@@ -537,9 +537,10 @@ body.dark-mode .warning-text {
 
 .quote-info {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 12px;
     flex: 1;
+    flex-wrap: wrap;
 }
 
 .quote-author {
@@ -596,22 +597,6 @@ body.dark-mode .warning-text {
 
 .like-btn.animating {
     pointer-events: none;
-}
-
-/* 使用者已按過愛心的樣式（按下後顯示紅色） */
-.like-btn.user-reacted {
-    background: rgba(229, 62, 62, 0.1);
-    border-color: #e53e3e;
-    color: #e53e3e;
-}
-
-.like-btn.user-reacted .like-count {
-    color: #e53e3e;
-}
-
-.like-btn.user-reacted:hover {
-    background: rgba(229, 62, 62, 0.15);
-    border-color: #c53030;
 }
 
 .heart-icon {
@@ -679,22 +664,6 @@ body.dark-mode .warning-text {
 
 .dislike-btn.animating {
     pointer-events: none;
-}
-
-/* 使用者已按過怒的樣式（按下後顯示橘色） */
-.dislike-btn.user-reacted {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: #f97316;
-    color: #f97316;
-}
-
-.dislike-btn.user-reacted .dislike-count {
-    color: #f97316;
-}
-
-.dislike-btn.user-reacted:hover {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: #ea580c;
 }
 
 .angry-icon {
