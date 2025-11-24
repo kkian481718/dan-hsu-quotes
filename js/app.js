@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 初始化
   initTheme();
+  initUserReactions(); // 初始化使用者反應記錄
   loadAllQuotes();
   setupEventListeners();
 
@@ -59,6 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (likeBtn) {
         handleLike(likeBtn);
       }
+
+      const dislikeBtn = e.target.closest(".dislike-btn");
+      if (dislikeBtn) {
+        handleDislike(dislikeBtn);
+      }
     });
   }
 
@@ -80,6 +86,56 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       themeToggle.style.animation = "";
     }, 10);
+  }
+
+  // 初始化使用者反應記錄
+  function initUserReactions() {
+    if (!localStorage.getItem("userReactions")) {
+      localStorage.setItem(
+        "userReactions",
+        JSON.stringify({
+          likes: [],
+          dislikes: [],
+        })
+      );
+    }
+  }
+
+  // 取得使用者反應記錄
+  function getUserReactions() {
+    return JSON.parse(
+      localStorage.getItem("userReactions") || '{"likes":[],"dislikes":[]}'
+    );
+  }
+
+  // 儲存使用者反應
+  function saveUserReaction(quoteId, type) {
+    const reactions = getUserReactions();
+    if (type === "like" && !reactions.likes.includes(quoteId)) {
+      reactions.likes.push(quoteId);
+    } else if (type === "dislike" && !reactions.dislikes.includes(quoteId)) {
+      reactions.dislikes.push(quoteId);
+    }
+    localStorage.setItem("userReactions", JSON.stringify(reactions));
+  }
+
+  // 移除使用者反應
+  function removeUserReaction(quoteId, type) {
+    const reactions = getUserReactions();
+    if (type === "like") {
+      reactions.likes = reactions.likes.filter((id) => id !== quoteId);
+    } else if (type === "dislike") {
+      reactions.dislikes = reactions.dislikes.filter((id) => id !== quoteId);
+    }
+    localStorage.setItem("userReactions", JSON.stringify(reactions));
+  }
+
+  // 檢查使用者是否已按過反應
+  function hasUserReacted(quoteId, type) {
+    const reactions = getUserReactions();
+    return type === "like"
+      ? reactions.likes.includes(quoteId)
+      : reactions.dislikes.includes(quoteId);
   }
 
   // 字數統計
@@ -121,6 +177,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 獲取用戶IP位址
+  async function getUserIP() {
+    try {
+      const response = await fetch("https://api.ipify.org?format=json");
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      console.error("無法獲取IP:", error);
+      return "unknown";
+    }
+  }
+
   // 執行 reCAPTCHA v3 驗證
   function executeRecaptcha() {
     return new Promise((resolve, reject) => {
@@ -144,8 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function submitQuoteToFirebase(quote, author, recaptchaToken) {
+  async function submitQuoteToFirebase(quote, author, recaptchaToken) {
     showToast("⏳", "正在提交語錄...", "info");
+
+    // 獲取用戶IP
+    const userIP = await getUserIP();
 
     // 建立新的語錄物件
     const newQuote = {
@@ -155,6 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
       createdAt: new Date().toISOString(),
       recaptchaToken: recaptchaToken || null, // 包含 reCAPTCHA token(選用)
       likes: 0, // 初始讚數為 0
+      dislikes: 0, // 初始怒數為 0
+      submitterIP: userIP, // 記錄發文者IP
     };
 
     // 推送到 Firebase
@@ -194,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
             author: data.author,
             timestamp: data.timestamp || 0,
             likes: data.likes || 0,
+            dislikes: data.dislikes || 0,
           });
         });
 
@@ -254,9 +328,12 @@ document.addEventListener("DOMContentLoaded", () => {
     quotes.forEach((q, index) => {
       const li = document.createElement("li");
       li.style.animationDelay = `${index * 0.1}s`;
-      console.log("Quote data:", q); // 調試用
       const timeString = formatTimestamp(q.timestamp);
-      console.log("Formatted time:", timeString); // 調試用
+
+      // 檢查使用者是否已按過反應
+      const userLiked = hasUserReacted(q.id, "like");
+      const userDisliked = hasUserReacted(q.id, "dislike");
+
       li.innerHTML = `
         <span class="quote-text">${q.quote}</span>
         <div class="quote-footer">
@@ -266,10 +343,24 @@ document.addEventListener("DOMContentLoaded", () => {
               q.timestamp
             ).toLocaleString("zh-TW")}">📅 ${timeString}</span>
           </div>
-          <button class="like-btn" data-quote-id="${q.id}" aria-label="按讚">
-            <span class="heart-icon">❤️</span>
-            <span class="like-count">${q.likes || 0}</span>
-          </button>
+          <div class="reaction-buttons">
+            <button class="like-btn ${
+              userLiked ? "user-reacted" : ""
+            }" data-quote-id="${q.id}" aria-label="${
+        userLiked ? "收回愛心" : "按讚"
+      }">
+              <span class="heart-icon">❤️</span>
+              <span class="like-count">${q.likes || 0}</span>
+            </button>
+            <button class="dislike-btn ${
+              userDisliked ? "user-reacted" : ""
+            }" data-quote-id="${q.id}" aria-label="${
+        userDisliked ? "收回怒" : "按怒"
+      }">
+              <span class="angry-icon">😡</span>
+              <span class="dislike-count">${q.dislikes || 0}</span>
+            </button>
+          </div>
         </div>
       `;
       quotesList.appendChild(li);
@@ -319,12 +410,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btn.classList.contains("animating")) return;
     btn.classList.add("animating");
 
+    // 檢查使用者是否已按過愛心
+    const hasLiked = hasUserReacted(quoteId, "like");
+
     // 取得當前讚數
     const quoteRef = quotesRef.child(quoteId);
     quoteRef.transaction(
       (quote) => {
         if (quote) {
-          quote.likes = (quote.likes || 0) + 1;
+          if (hasLiked) {
+            // 收回愛心：減少計數
+            quote.likes = Math.max((quote.likes || 0) - 1, 0);
+          } else {
+            // 新增愛心：增加計數
+            quote.likes = (quote.likes || 0) + 1;
+          }
         }
         return quote;
       },
@@ -333,13 +433,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (error) {
           console.error("按讚失敗:", error);
-          showToast("❌", "按讚失敗，請稍後再試", "error");
+          showToast("❌", "操作失敗，請稍後再試", "error");
         } else if (committed) {
-          // 觸發愛心動畫
-          btn.classList.add("liked");
-          setTimeout(() => {
-            btn.classList.remove("liked");
-          }, 600);
+          if (hasLiked) {
+            // 收回愛心
+            removeUserReaction(quoteId, "like");
+            btn.classList.remove("user-reacted");
+            btn.setAttribute("aria-label", "按讚");
+            showToast("💔", "已收回愛心", "info");
+          } else {
+            // 新增愛心
+            saveUserReaction(quoteId, "like");
+            btn.classList.add("user-reacted");
+            btn.setAttribute("aria-label", "收回愛心");
+            // 觸發愛心動畫
+            btn.classList.add("liked");
+            setTimeout(() => {
+              btn.classList.remove("liked");
+            }, 600);
+          }
+        }
+      }
+    );
+  }
+
+  // 處理怒氣按鈕
+  function handleDislike(btn) {
+    const quoteId = btn.dataset.quoteId;
+    if (!quoteId) return;
+
+    // 防止重複點擊
+    if (btn.classList.contains("animating")) return;
+    btn.classList.add("animating");
+
+    // 檢查使用者是否已按過怒
+    const hasDisliked = hasUserReacted(quoteId, "dislike");
+
+    // 取得當前怒數
+    const quoteRef = quotesRef.child(quoteId);
+    quoteRef.transaction(
+      (quote) => {
+        if (quote) {
+          if (hasDisliked) {
+            // 收回怒：減少計數
+            quote.dislikes = Math.max((quote.dislikes || 0) - 1, 0);
+          } else {
+            // 新增怒：增加計數
+            quote.dislikes = (quote.dislikes || 0) + 1;
+          }
+        }
+        return quote;
+      },
+      (error, committed, snapshot) => {
+        btn.classList.remove("animating");
+
+        if (error) {
+          console.error("按怒失敗:", error);
+          showToast("❌", "操作失敗，請稍後再試", "error");
+        } else if (committed) {
+          if (hasDisliked) {
+            // 收回怒
+            removeUserReaction(quoteId, "dislike");
+            btn.classList.remove("user-reacted");
+            btn.setAttribute("aria-label", "按怒");
+            showToast("😌", "已收回怒氣", "info");
+          } else {
+            // 新增怒
+            saveUserReaction(quoteId, "dislike");
+            btn.classList.add("user-reacted");
+            btn.setAttribute("aria-label", "收回怒");
+            // 觸發怒氣動畫
+            btn.classList.add("disliked");
+            setTimeout(() => {
+              btn.classList.remove("disliked");
+            }, 600);
+          }
         }
       }
     );

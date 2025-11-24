@@ -215,6 +215,63 @@ body.dark-mode .theme-toggle .moon-icon {
     font-size: 1.8rem;
 }
 
+/* ==================== IP警語樣式 ==================== */
+.ip-warning {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 2px solid #f59e0b;
+    border-radius: var(--radius-sm);
+    animation: fadeInDown 0.5s ease-out;
+}
+
+body.dark-mode .ip-warning {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: #fbbf24;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.warning-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+}
+
+.warning-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+body.dark-mode .warning-text {
+    color: var(--text-primary);
+}
+
 /* ==================== 表單樣式 ==================== */
 .quote-form {
     display: flex;
@@ -423,12 +480,12 @@ body.dark-mode .theme-toggle .moon-icon {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
 }
 
 .quotes-list li {
     background: var(--bg-primary);
-    padding: 20px;
+    padding: 12px 15px;
     border-radius: var(--radius-md);
     border-left: 4px solid var(--primary-color);
     box-shadow: var(--shadow-sm);
@@ -454,10 +511,10 @@ body.dark-mode .theme-toggle .moon-icon {
 
 .quote-text {
     display: block;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: var(--text-primary);
-    margin-bottom: 12px;
-    line-height: 1.6;
+    margin-bottom: 8px;
+    line-height: 1.5;
     font-style: italic;
 }
 
@@ -473,20 +530,20 @@ body.dark-mode .theme-toggle .moon-icon {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    margin-top: 4px;
 }
 
 .quote-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     flex: 1;
 }
 
 .quote-author {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     font-weight: 500;
 }
@@ -496,7 +553,7 @@ body.dark-mode .theme-toggle .moon-icon {
 }
 
 .quote-time {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     opacity: 0.8;
     display: flex;
@@ -504,18 +561,25 @@ body.dark-mode .theme-toggle .moon-icon {
     gap: 4px;
 }
 
+/* ==================== 反應按鈕容器 ==================== */
+.reaction-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 /* ==================== 愛心按讚按鈕 ==================== */
 .like-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
+    gap: 5px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: 20px;
     cursor: pointer;
     transition: all var(--transition-fast);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
@@ -532,6 +596,22 @@ body.dark-mode .theme-toggle .moon-icon {
 
 .like-btn.animating {
     pointer-events: none;
+}
+
+/* 使用者已按過愛心的樣式（按下後顯示紅色） */
+.like-btn.user-reacted {
+    background: rgba(229, 62, 62, 0.1);
+    border-color: #e53e3e;
+    color: #e53e3e;
+}
+
+.like-btn.user-reacted .like-count {
+    color: #e53e3e;
+}
+
+.like-btn.user-reacted:hover {
+    background: rgba(229, 62, 62, 0.15);
+    border-color: #c53030;
 }
 
 .heart-icon {
@@ -564,6 +644,86 @@ body.dark-mode .theme-toggle .moon-icon {
 }
 
 .like-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 20px;
+    text-align: center;
+}
+
+/* ==================== 怒氣按鈕 ==================== */
+.dislike-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.dislike-btn:hover {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.05);
+    transform: scale(1.05);
+}
+
+.dislike-btn:active {
+    transform: scale(0.95);
+}
+
+.dislike-btn.animating {
+    pointer-events: none;
+}
+
+/* 使用者已按過怒的樣式（按下後顯示橘色） */
+.dislike-btn.user-reacted {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: #f97316;
+    color: #f97316;
+}
+
+.dislike-btn.user-reacted .dislike-count {
+    color: #f97316;
+}
+
+.dislike-btn.user-reacted:hover {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: #ea580c;
+}
+
+.angry-icon {
+    font-size: 1.2rem;
+    transition: all var(--transition-fast);
+    display: inline-block;
+}
+
+.dislike-btn:hover .angry-icon {
+    transform: scale(1.2);
+}
+
+.dislike-btn.disliked .angry-icon {
+    animation: angryShake 0.6s ease;
+}
+
+@keyframes angryShake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: rotate(-10deg);
+    }
+    20%, 40%, 60%, 80% {
+        transform: rotate(10deg);
+    }
+}
+
+.dislike-count {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -677,7 +837,7 @@ body.dark-mode .theme-toggle .moon-icon {
         align-items: flex-start;
     }
     
-    .like-btn {
+    .reaction-buttons {
         align-self: flex-end;
     }
 }
