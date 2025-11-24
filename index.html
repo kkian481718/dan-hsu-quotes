@@ -1,25 +1,102 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dan Hsu 經典語錄</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- 深色模式切換按鈕 -->
+    <button class="theme-toggle" id="themeToggle" aria-label="切換深色模式">
+      <span class="sun-icon">☀️</span>
+      <span class="moon-icon">🌙</span>
+    </button>
+
     <div class="container">
-        <h1>Dan Hsu 經典語錄</h1>
-        <div class="input-area">
-            <input type="text" id="quoteInput" placeholder="輸入語錄">
-            <input type="text" id="authorInput" placeholder="投稿人姓名">
-            <button id="submitQuote">提交語錄</button>
+      <!-- 標題區域 -->
+      <header class="header">
+        <h1 class="main-title">
+          <span class="title-icon">💬</span>
+          Dan Hsu 經典語錄
+        </h1>
+        <p class="subtitle">收集並分享智慧的語錄</p>
+      </header>
+
+      <!-- 輸入表單區域 -->
+      <section class="input-section">
+        <h2 class="section-title">
+          <span class="icon">✨</span>
+          投稿新語錄
+        </h2>
+        <form class="quote-form" id="quoteForm">
+          <div class="input-group">
+            <label for="quoteInput" class="input-label">語錄內容</label>
+            <textarea
+              id="quoteInput"
+              class="input-field quote-textarea"
+              placeholder="請輸入精彩的語錄內容..."
+              rows="3"
+              required
+            ></textarea>
+            <span class="char-count" id="charCount">0 / 500</span>
+          </div>
+          <div class="input-group">
+            <label for="authorInput" class="input-label">投稿人姓名</label>
+            <input
+              type="text"
+              id="authorInput"
+              class="input-field"
+              placeholder="請輸入您的姓名"
+              required
+            />
+          </div>
+          <button type="submit" id="submitQuote" class="submit-btn">
+            <span class="btn-icon">📮</span>
+            <span class="btn-text">提交語錄</span>
+            <span class="btn-loader"></span>
+          </button>
+        </form>
+      </section>
+
+      <!-- 語錄顯示區域 -->
+      <section class="quotes-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="icon">📚</span>
+            過去的語錄
+          </h2>
+          <div class="filter-controls">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="recent">最新</button>
+          </div>
         </div>
-        <div class="quotes-display">
-            <h2>過去的語錄</h2>
-            <ul id="quotesList"></ul>
+
+        <!-- 載入狀態 -->
+        <div class="loading-state" id="loadingState">
+          <div class="spinner"></div>
+          <p>載入中...</p>
         </div>
+
+        <!-- 空狀態 -->
+        <div class="empty-state" id="emptyState" style="display: none">
+          <span class="empty-icon">📭</span>
+          <p>目前還沒有語錄</p>
+          <p class="empty-hint">成為第一個投稿的人吧！</p>
+        </div>
+
+        <!-- 語錄列表 -->
+        <ul class="quotes-list" id="quotesList"></ul>
+      </section>
     </div>
+
+    <!-- 通知提示 -->
+    <div class="toast" id="toast">
+      <span class="toast-icon"></span>
+      <span class="toast-message"></span>
+    </div>
+
     <script src="js/storage.js"></script>
     <script src="js/app.js"></script>
-</body>
+  </body>
 </html>

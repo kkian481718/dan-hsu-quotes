@@ -8,41 +8,169 @@ document.addEventListener("DOMContentLoaded", () => {
   const quoteInput = document.getElementById("quoteInput");
   const authorInput = document.getElementById("authorInput");
   const submitButton = document.getElementById("submitQuote");
+  const quoteForm = document.getElementById("quoteForm");
   const quotesList = document.getElementById("quotesList");
+  const themeToggle = document.getElementById("themeToggle");
+  const loadingState = document.getElementById("loadingState");
+  const emptyState = document.getElementById("emptyState");
+  const charCount = document.getElementById("charCount");
 
-  // Load existing quotes on page load
+  // 初始化
+  initTheme();
   loadAllQuotes();
+  setupEventListeners();
 
-  submitButton.addEventListener("click", () => {
+  // 設置事件監聽器
+  function setupEventListeners() {
+    // 主題切換
+    themeToggle.addEventListener("click", toggleTheme);
+
+    // 字數統計
+    quoteInput.addEventListener("input", updateCharCount);
+
+    // 表單提交
+    quoteForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleSubmit();
+    });
+
+    // 篩選按鈕
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    filterButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        filterButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const filter = btn.dataset.filter;
+        applyFilter(filter);
+      });
+    });
+
+    // 輸入框動畫效果
+    const inputs = document.querySelectorAll(".input-field");
+    inputs.forEach((input) => {
+      input.addEventListener("focus", () => {
+        input.parentElement.classList.add("focused");
+      });
+      input.addEventListener("blur", () => {
+        input.parentElement.classList.remove("focused");
+      });
+    });
+  }
+
+  // 主題切換功能
+  function initTheme() {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark-mode");
+    }
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("dark-mode");
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+
+    // 添加過渡動畫
+    themeToggle.style.animation = "none";
+    setTimeout(() => {
+      themeToggle.style.animation = "";
+    }, 10);
+  }
+
+  // 字數統計
+  function updateCharCount() {
+    const length = quoteInput.value.length;
+    const maxLength = 500;
+    charCount.textContent = `${length} / ${maxLength}`;
+
+    if (length > maxLength) {
+      charCount.style.color = "#e53e3e";
+      quoteInput.value = quoteInput.value.substring(0, maxLength);
+    } else if (length > maxLength * 0.9) {
+      charCount.style.color = "#dd6b20";
+    } else {
+      charCount.style.color = "var(--text-muted)";
+    }
+  }
+
+  // 表單提交處理
+  function handleSubmit() {
     const quote = quoteInput.value.trim();
     const author = authorInput.value.trim();
 
-    if (quote && author) {
-      submitQuoteAsIssue(quote, author);
-    } else {
-      alert("請填寫語錄和投稿者姓名");
+    if (!quote || !author) {
+      showToast("⚠️", "請填寫完整的語錄內容和姓名", "warning");
+      return;
     }
-  });
 
-  function submitQuoteAsIssue(quote, author) {
-    const issueTitle = `語錄：${quote.substring(0, 50)}${
-      quote.length > 50 ? "..." : ""
-    }`;
-    const issueBody = `**語錄內容：** ${quote}\n\n**投稿者：** ${author}\n\n---\n*此語錄由網頁表單自動提交*`;
+    submitButton.classList.add("loading");
 
-    // 顯示 GitHub Issue 創建連結
-    const issueUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new?title=${encodeURIComponent(
-      issueTitle
-    )}&body=${encodeURIComponent(issueBody)}&labels=${ISSUE_LABEL}`;
+    setTimeout(() => {
+      submitQuoteAsIssue(quote, author);
+      submitButton.classList.remove("loading");
+    }, 500);
+  }
 
-    alert("將開啟 GitHub 頁面讓您提交語錄（需要 GitHub 帳號）");
-    window.open(issueUrl, "_blank");
+  async function submitQuoteAsIssue(quote, author) {
+    showToast("⏳", "正在提交語錄...", "info");
 
-    quoteInput.value = "";
-    authorInput.value = "";
+    // 使用 GitHub repository_dispatch 事件觸發 GitHub Actions
+    // 這樣 token 就安全地存在 GitHub Secrets 中,不會暴露在前端
+    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_type: "create-quote-issue",
+          client_payload: {
+            quote: quote,
+            author: author,
+          },
+        }),
+      });
+
+      // repository_dispatch 成功時返回 204 No Content
+      if (response.status === 204 || response.ok) {
+        showToast("🎉", "語錄已成功提交！", "success");
+        quoteInput.value = "";
+        authorInput.value = "";
+        updateCharCount();
+        // 重新載入語錄列表
+        setTimeout(() => loadAllQuotes(), 1500);
+      } else {
+        throw new Error(`提交失敗: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("提交失敗:", error);
+
+      // 如果 API 調用失敗,降級使用開啟 GitHub 頁面的方式
+      const issueTitle = `語錄：${quote.substring(0, 50)}${
+        quote.length > 50 ? "..." : ""
+      }`;
+      const issueBody = `**語錄內容：** ${quote}\n\n**投稿者：** ${author}\n\n---\n*此語錄由網頁表單自動提交*`;
+      const issueUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new?title=${encodeURIComponent(
+        issueTitle
+      )}&body=${encodeURIComponent(issueBody)}&labels=${ISSUE_LABEL}`;
+
+      showToast("ℹ️", "正在開啟 GitHub 頁面...", "info");
+      setTimeout(() => {
+        window.open(issueUrl, "_blank");
+        showToast("📝", "請在 GitHub 頁面完成提交", "info");
+      }, 500);
+    }
   }
 
   function loadAllQuotes() {
+    // 顯示載入狀態
+    loadingState.style.display = "block";
+    emptyState.style.display = "none";
+    quotesList.style.display = "none";
+
     // 載入 JSON 檔案中的預設語錄
     fetch("data/quotes.json")
       .then((response) => response.json())
@@ -52,16 +180,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return loadGitHubIssues()
           .then((issueQuotes) => {
             const allQuotes = [...jsonQuotes, ...issueQuotes];
+            window.allQuotesData = allQuotes; // 儲存所有語錄資料
             displayQuotes(allQuotes);
           })
           .catch(() => {
             // 如果無法載入 Issues，只顯示 JSON 中的語錄
+            window.allQuotesData = jsonQuotes;
             displayQuotes(jsonQuotes);
           });
       })
       .catch((error) => {
         console.error("Error loading quotes:", error);
-        quotesList.innerHTML = "<li>載入語錄時發生錯誤</li>";
+        loadingState.style.display = "none";
+        showToast("❌", "載入語錄時發生錯誤", "error");
+        displayQuotes([]);
       });
   }
 
@@ -89,17 +221,60 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function displayQuotes(quotes) {
-    quotesList.innerHTML = "";
+    loadingState.style.display = "none";
 
     if (quotes.length === 0) {
-      quotesList.innerHTML = "<li>目前還沒有語錄</li>";
+      emptyState.style.display = "block";
+      quotesList.style.display = "none";
       return;
     }
 
-    quotes.forEach((q) => {
+    emptyState.style.display = "none";
+    quotesList.style.display = "flex";
+    quotesList.innerHTML = "";
+
+    quotes.forEach((q, index) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span class="quote-text">"${q.quote}"</span> <span class="quote-author">- ${q.author}</span>`;
+      li.style.animationDelay = `${index * 0.1}s`;
+      li.innerHTML = `
+        <span class="quote-text">${q.quote}</span>
+        <span class="quote-author">${q.author}</span>
+      `;
       quotesList.appendChild(li);
     });
+  }
+
+  // 篩選功能
+  function applyFilter(filter) {
+    const quotes = window.allQuotesData || [];
+
+    if (filter === "all") {
+      displayQuotes(quotes);
+    } else if (filter === "recent") {
+      // 只顯示最新的 5 條
+      displayQuotes(quotes.slice(-5).reverse());
+    }
+  }
+
+  // 通知提示功能
+  function showToast(icon, message, type = "info") {
+    const toast = document.getElementById("toast");
+    const toastIcon = toast.querySelector(".toast-icon");
+    const toastMessage = toast.querySelector(".toast-message");
+
+    toastIcon.textContent = icon;
+    toastMessage.textContent = message;
+
+    // 移除之前的類型類
+    toast.classList.remove("success", "error", "warning", "info");
+    toast.classList.add(type);
+
+    // 顯示通知
+    toast.classList.add("show");
+
+    // 3 秒後自動隱藏
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3000);
   }
 });
