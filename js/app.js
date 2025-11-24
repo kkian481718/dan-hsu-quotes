@@ -12,10 +12,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const emptyState = document.getElementById("emptyState");
   const charCount = document.getElementById("charCount");
 
+  // 分頁相關元素
+  const paginationControls = document.getElementById("paginationControls");
+  const paginationInfo = document.getElementById("paginationInfo");
+  const itemsPerPageSelect = document.getElementById("itemsPerPage");
+  const prevPageBtn = document.getElementById("prevPage");
+  const nextPageBtn = document.getElementById("nextPage");
+  const pageNumbersContainer = document.getElementById("pageNumbers");
+
+  // 分頁狀態
+  let currentPage = 1;
+  let itemsPerPage = 10;
+  let totalPages = 1;
+  let currentFilter = "all";
+
   // 初始化
   initTheme();
   loadAllQuotes();
   setupEventListeners();
+  loadDeployTime();
 
   // 設置事件監聽器
   function setupEventListeners() {
@@ -38,8 +53,31 @@ document.addEventListener("DOMContentLoaded", () => {
         filterButtons.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         const filter = btn.dataset.filter;
+        currentFilter = filter;
+        currentPage = 1; // 重置到第一頁
         applyFilter(filter);
       });
+    });
+
+    // 分頁控制事件
+    itemsPerPageSelect.addEventListener("change", (e) => {
+      itemsPerPage = parseInt(e.target.value);
+      currentPage = 1;
+      applyFilter(currentFilter);
+    });
+
+    prevPageBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        applyFilter(currentFilter);
+      }
+    });
+
+    nextPageBtn.addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        applyFilter(currentFilter);
+      }
     });
 
     // 輸入框動畫效果
@@ -261,12 +299,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${year}/${month}/${day} ${hours}:${minutes}`;
   }
 
-  function displayQuotes(quotes) {
+  function displayQuotes(quotes, startIndex = 0, endIndex = quotes.length) {
     loadingState.style.display = "none";
 
     if (quotes.length === 0) {
       emptyState.style.display = "block";
       quotesList.style.display = "none";
+      paginationControls.style.display = "none";
       return;
     }
 
@@ -274,7 +313,10 @@ document.addEventListener("DOMContentLoaded", () => {
     quotesList.style.display = "flex";
     quotesList.innerHTML = "";
 
-    quotes.forEach((q, index) => {
+    // 只顯示當前頁的語錄
+    const displayedQuotes = quotes.slice(startIndex, endIndex);
+
+    displayedQuotes.forEach((q, index) => {
       const li = document.createElement("li");
       li.style.animationDelay = `${index * 0.1}s`;
       const timeString = formatTimestamp(q.timestamp);
@@ -304,17 +346,122 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       quotesList.appendChild(li);
     });
+
+    // 更新分頁控制
+    updatePaginationControls(quotes.length, startIndex, endIndex);
+  }
+
+  // 更新分頁控制介面
+  function updatePaginationControls(totalItems, startIndex, endIndex) {
+    // 計算總頁數
+    totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    // 如果總數小於等於每頁數量，隱藏分頁控制
+    if (totalItems <= itemsPerPage) {
+      paginationControls.style.display = "none";
+      return;
+    }
+
+    paginationControls.style.display = "flex";
+
+    // 更新資訊文字
+    const actualEnd = Math.min(endIndex, totalItems);
+    paginationInfo.textContent = `顯示第 ${
+      startIndex + 1
+    }-${actualEnd} 筆，共 ${totalItems} 筆`;
+
+    // 更新按鈕狀態
+    prevPageBtn.disabled = currentPage === 1;
+    nextPageBtn.disabled = currentPage === totalPages;
+
+    // 生成頁碼按鈕
+    renderPageNumbers();
+  }
+
+  // 渲染頁碼按鈕
+  function renderPageNumbers() {
+    pageNumbersContainer.innerHTML = "";
+
+    // 決定要顯示哪些頁碼
+    const maxPageButtons = 5; // 最多顯示 5 個頁碼按鈕
+    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+
+    // 調整起始頁
+    if (endPage - startPage + 1 < maxPageButtons) {
+      startPage = Math.max(1, endPage - maxPageButtons + 1);
+    }
+
+    // 如果不是從第一頁開始，顯示第一頁和省略號
+    if (startPage > 1) {
+      addPageButton(1);
+      if (startPage > 2) {
+        addEllipsis();
+      }
+    }
+
+    // 顯示頁碼按鈕
+    for (let i = startPage; i <= endPage; i++) {
+      addPageButton(i);
+    }
+
+    // 如果不是到最後一頁，顯示省略號和最後一頁
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        addEllipsis();
+      }
+      addPageButton(totalPages);
+    }
+  }
+
+  // 新增頁碼按鈕
+  function addPageButton(pageNumber) {
+    const btn = document.createElement("button");
+    btn.className = "page-number-btn";
+    btn.textContent = pageNumber;
+    if (pageNumber === currentPage) {
+      btn.classList.add("active");
+    }
+    btn.addEventListener("click", () => {
+      currentPage = pageNumber;
+      applyFilter(currentFilter);
+    });
+    pageNumbersContainer.appendChild(btn);
+  }
+
+  // 新增省略號
+  function addEllipsis() {
+    const ellipsis = document.createElement("span");
+    ellipsis.className = "page-ellipsis";
+    ellipsis.textContent = "...";
+    pageNumbersContainer.appendChild(ellipsis);
   }
 
   // 篩選功能
   function applyFilter(filter) {
     const quotes = window.allQuotesData || [];
+    let filteredQuotes = [];
 
     if (filter === "all") {
-      displayQuotes(quotes);
+      filteredQuotes = quotes;
     } else if (filter === "recent") {
-      // 只顯示最新的 5 條
-      displayQuotes(quotes.slice(-5).reverse());
+      // 最舊的語錄（時間戳最小的）
+      filteredQuotes = [...quotes].reverse();
+    }
+
+    // 計算分頁範圍
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
+    // 顯示當前頁的語錄
+    displayQuotes(filteredQuotes, startIndex, endIndex);
+
+    // 滾動到語錄列表頂部
+    if (quotesList.parentElement) {
+      quotesList.parentElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }
 
@@ -338,5 +485,55 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       toast.classList.remove("show");
     }, 1000);
+  }
+
+  // 載入 GitHub Pages 部署時間
+  async function loadDeployTime() {
+    const deployTimeElement = document.getElementById("deployTime");
+    const deployText = deployTimeElement.querySelector(".deploy-text");
+
+    try {
+      // 使用 GitHub API 獲取最新的 commit 時間
+      const response = await fetch(
+        "https://api.github.com/repos/kkian481718/dan-hsu-quotes/commits/main"
+      );
+
+      if (!response.ok) {
+        throw new Error("無法獲取部署資訊");
+      }
+
+      const data = await response.json();
+      const commitDate = new Date(data.commit.committer.date);
+      const formattedDate = formatDeployTime(commitDate);
+
+      deployText.textContent = `最後更新: ${formattedDate}`;
+    } catch (error) {
+      console.error("載入部署時間失敗:", error);
+      deployText.textContent = "無法載入部署資訊";
+    }
+  }
+
+  // 格式化部署時間
+  function formatDeployTime(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    // 相對時間顯示
+    if (diffMins < 1) return "剛剛";
+    if (diffMins < 60) return `${diffMins} 分鐘前`;
+    if (diffHours < 24) return `${diffHours} 小時前`;
+    if (diffDays < 7) return `${diffDays} 天前`;
+
+    // 絕對時間顯示
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}/${month}/${day} ${hours}:${minutes}`;
   }
 });

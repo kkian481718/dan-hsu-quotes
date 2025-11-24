@@ -103,8 +103,42 @@
 
         <!-- 語錄列表 -->
         <ul class="quotes-list" id="quotesList"></ul>
+
+        <!-- 分頁控制 -->
+        <div
+          class="pagination-controls"
+          id="paginationControls"
+          style="display: none"
+        >
+          <div class="pagination-info">
+            <span id="paginationInfo">顯示第 1-10 筆，共 0 筆</span>
+            <select id="itemsPerPage" class="items-per-page-select">
+              <option value="10">每頁 10 筆</option>
+              <option value="20">每頁 20 筆</option>
+              <option value="50">每頁 50 筆</option>
+              <option value="100">每頁 100 筆</option>
+            </select>
+          </div>
+          <div class="pagination-buttons">
+            <button id="prevPage" class="pagination-btn" aria-label="上一頁">
+              <span>← 上一頁</span>
+            </button>
+            <div class="page-numbers" id="pageNumbers"></div>
+            <button id="nextPage" class="pagination-btn" aria-label="下一頁">
+              <span>下一頁 →</span>
+            </button>
+          </div>
+        </div>
       </section>
     </div>
+
+    <!-- 部署時間顯示 -->
+    <footer class="deploy-info">
+      <div class="deploy-time" id="deployTime">
+        <span class="deploy-icon">🚀</span>
+        <span class="deploy-text">載入部署資訊中...</span>
+      </div>
+    </footer>
 
     <!-- 通知提示 -->
     <div class="toast" id="toast">

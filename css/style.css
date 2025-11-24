@@ -810,3 +810,189 @@ body.dark-mode .warning-text {
         align-self: flex-end;
     }
 }
+
+/* ==================== 部署時間顯示 ==================== */
+.deploy-info {
+    text-align: center;
+    padding: 30px 20px;
+    margin-top: 40px;
+}
+
+.deploy-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    transition: all var(--transition-base);
+}
+
+.deploy-time:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.deploy-icon {
+    font-size: 1.2rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ==================== 分頁控制 ==================== */
+.pagination-controls {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.items-per-page-select {
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.items-per-page-select:hover {
+    border-color: var(--primary-color);
+}
+
+.items-per-page-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.pagination-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 10px 16px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.page-number-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 8px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-number-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+.page-number-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.page-ellipsis {
+    padding: 8px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* 分頁控制響應式設計 */
+@media (max-width: 768px) {
+    .pagination-info {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+    
+    .pagination-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .page-numbers {
+        flex: 1;
+        justify-content: center;
+        overflow-x: auto;
+        padding: 0 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .page-number-btn {
+        min-width: 35px;
+        height: 35px;
+        font-size: 0.85rem;
+    }
+}
