@@ -52,6 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
         input.parentElement.classList.remove("focused");
       });
     });
+
+    // 愛心按讚功能(使用事件委託)
+    quotesList.addEventListener("click", (e) => {
+      const likeBtn = e.target.closest(".like-btn");
+      if (likeBtn) {
+        handleLike(likeBtn);
+      }
+    });
   }
 
   // 主題切換功能
@@ -145,7 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
       author: author,
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       createdAt: new Date().toISOString(),
-      recaptchaToken: recaptchaToken || null, // 包含 reCAPTCHA token（選用）
+      recaptchaToken: recaptchaToken || null, // 包含 reCAPTCHA token(選用)
+      likes: 0, // 初始讚數為 0
     };
 
     // 推送到 Firebase
@@ -184,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
             quote: data.quote,
             author: data.author,
             timestamp: data.timestamp || 0,
+            likes: data.likes || 0,
           });
         });
 
@@ -250,10 +260,16 @@ document.addEventListener("DOMContentLoaded", () => {
       li.innerHTML = `
         <span class="quote-text">${q.quote}</span>
         <div class="quote-footer">
-          <span class="quote-author">${q.author}</span>
-          <span class="quote-time" title="${new Date(
-            q.timestamp
-          ).toLocaleString("zh-TW")}">📅 ${timeString}</span>
+          <div class="quote-info">
+            <span class="quote-author">${q.author}</span>
+            <span class="quote-time" title="${new Date(
+              q.timestamp
+            ).toLocaleString("zh-TW")}">📅 ${timeString}</span>
+          </div>
+          <button class="like-btn" data-quote-id="${q.id}" aria-label="按讚">
+            <span class="heart-icon">❤️</span>
+            <span class="like-count">${q.likes || 0}</span>
+          </button>
         </div>
       `;
       quotesList.appendChild(li);
@@ -292,5 +308,40 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       toast.classList.remove("show");
     }, 3000);
+  }
+
+  // 處理愛心按讚
+  function handleLike(btn) {
+    const quoteId = btn.dataset.quoteId;
+    if (!quoteId) return;
+
+    // 防止重複點擊
+    if (btn.classList.contains("animating")) return;
+    btn.classList.add("animating");
+
+    // 取得當前讚數
+    const quoteRef = quotesRef.child(quoteId);
+    quoteRef.transaction(
+      (quote) => {
+        if (quote) {
+          quote.likes = (quote.likes || 0) + 1;
+        }
+        return quote;
+      },
+      (error, committed, snapshot) => {
+        btn.classList.remove("animating");
+
+        if (error) {
+          console.error("按讚失敗:", error);
+          showToast("❌", "按讚失敗，請稍後再試", "error");
+        } else if (committed) {
+          // 觸發愛心動畫
+          btn.classList.add("liked");
+          setTimeout(() => {
+            btn.classList.remove("liked");
+          }, 600);
+        }
+      }
+    );
   }
 });

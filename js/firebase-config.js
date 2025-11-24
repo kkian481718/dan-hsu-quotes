@@ -1,6 +1,4 @@
 // Firebase 配置
-// 請在 Firebase Console 中取得您的配置資訊
-// 參考 FIREBASE_SETUP.md 了解如何設定
 
 const firebaseConfig = {
   apiKey: "AIzaSyCv9zuggv7imyJqj_bqkIXetS1pyz42aic",
@@ -15,7 +13,7 @@ const firebaseConfig = {
 };
 
 // reCAPTCHA v3 配置
-const RECAPTCHA_SITE_KEY = "6LdNJxcsAAAAAFIHULIlTNOJHNlJGyI7-cAMCSVq"; // 請替換為你的 Site Key
+const RECAPTCHA_SITE_KEY = "6LdNJxcsAAAAAFIHULIlTNOJHNlJGyI7-cAMCSVq";
 
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
