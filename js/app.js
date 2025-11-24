@@ -1,8 +1,5 @@
 // app.js
-// GitHub Repository 資訊 - 請修改為您的 repo
-const GITHUB_OWNER = "kkian481718"; // 例如: 'john-doe'
-const GITHUB_REPO = "dan-hsu-quotes"; // 您的 repo 名稱
-const ISSUE_LABEL = "quote"; // 用來標記語錄的 label
+// 使用 Firebase Realtime Database 儲存語錄
 
 document.addEventListener("DOMContentLoaded", () => {
   const quoteInput = document.getElementById("quoteInput");
@@ -104,46 +101,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     submitButton.classList.add("loading");
-
-    setTimeout(() => {
-      submitQuoteAsIssue(quote, author);
-      submitButton.classList.remove("loading");
-    }, 500);
+    submitQuoteToFirebase(quote, author);
   }
 
-  async function submitQuoteAsIssue(quote, author) {
+  function submitQuoteToFirebase(quote, author) {
     showToast("⏳", "正在提交語錄...", "info");
 
-    try {
-      // 使用 Netlify Serverless Function
-      // Token 安全地存在 Netlify 環境變數中
-      const response = await fetch("/.netlify/functions/create-issue", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quote: quote,
-          author: author,
-        }),
-      });
+    // 建立新的語錄物件
+    const newQuote = {
+      quote: quote,
+      author: author,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      createdAt: new Date().toISOString(),
+    };
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+    // 推送到 Firebase
+    quotesRef
+      .push(newQuote)
+      .then(() => {
         showToast("🎉", "語錄已成功提交！", "success");
         quoteInput.value = "";
         authorInput.value = "";
         updateCharCount();
-        // 重新載入語錄列表
-        setTimeout(() => loadAllQuotes(), 1500);
-      } else {
-        throw new Error(data.error || "提交失敗");
-      }
-    } catch (error) {
-      console.error("提交失敗:", error);
-      showToast("❌", "提交失敗，請稍後再試", "error");
-    }
+        submitButton.classList.remove("loading");
+        // 不需要重新載入，Firebase 的即時監聽器會自動更新
+      })
+      .catch((error) => {
+        console.error("提交失敗:", error);
+        showToast("❌", "提交失敗，請稍後再試", "error");
+        submitButton.classList.remove("loading");
+      });
   }
 
   function loadAllQuotes() {
@@ -152,52 +139,36 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyState.style.display = "none";
     quotesList.style.display = "none";
 
-    // 載入 JSON 檔案中的預設語錄
+    // 先載入 JSON 檔案中的預設語錄
     fetch("data/quotes.json")
       .then((response) => response.json())
       .then((data) => {
         const jsonQuotes = data.quotes || [];
-        // 載入 GitHub Issues 中的語錄
-        return loadGitHubIssues()
-          .then((issueQuotes) => {
-            const allQuotes = [...jsonQuotes, ...issueQuotes];
-            window.allQuotesData = allQuotes; // 儲存所有語錄資料
-            displayQuotes(allQuotes);
-          })
-          .catch(() => {
-            // 如果無法載入 Issues，只顯示 JSON 中的語錄
-            window.allQuotesData = jsonQuotes;
-            displayQuotes(jsonQuotes);
+
+        // 設定 Firebase 即時監聽器
+        quotesRef.orderByChild("timestamp").on("value", (snapshot) => {
+          const firebaseQuotes = [];
+          snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            firebaseQuotes.push({
+              id: childSnapshot.key,
+              quote: data.quote,
+              author: data.author,
+              timestamp: data.timestamp || 0,
+            });
           });
+
+          // 合併 JSON 和 Firebase 的語錄，Firebase 的語錄放在後面（較新）
+          const allQuotes = [...jsonQuotes, ...firebaseQuotes.reverse()];
+          window.allQuotesData = allQuotes;
+          displayQuotes(allQuotes);
+        });
       })
       .catch((error) => {
         console.error("Error loading quotes:", error);
         loadingState.style.display = "none";
         showToast("❌", "載入語錄時發生錯誤", "error");
         displayQuotes([]);
-      });
-  }
-
-  function loadGitHubIssues() {
-    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?labels=${ISSUE_LABEL}&state=open`;
-
-    return fetch(apiUrl)
-      .then((response) => {
-        if (!response.ok) throw new Error("Failed to fetch issues");
-        return response.json();
-      })
-      .then((issues) => {
-        return issues.map((issue) => {
-          // 從 issue body 中解析語錄和作者
-          const body = issue.body || "";
-          const quoteMatch = body.match(/\*\*語錄內容：\*\*\s*(.+)/);
-          const authorMatch = body.match(/\*\*投稿者：\*\*\s*(.+)/);
-
-          return {
-            quote: quoteMatch ? quoteMatch[1].trim() : issue.title,
-            author: authorMatch ? authorMatch[1].trim() : "Unknown",
-          };
-        });
       });
   }
 
