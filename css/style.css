@@ -456,7 +456,7 @@ body.dark-mode .theme-toggle .moon-icon {
     display: block;
     font-size: 1.1rem;
     color: var(--text-primary);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     line-height: 1.6;
     font-style: italic;
 }
@@ -469,16 +469,31 @@ body.dark-mode .theme-toggle .moon-icon {
     margin-right: 5px;
 }
 
+.quote-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .quote-author {
-    display: block;
     font-size: 0.95rem;
     color: var(--text-muted);
     font-weight: 500;
-    text-align: right;
 }
 
 .quote-author::before {
     content: '— ';
+}
+
+.quote-time {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* ==================== 通知提示 ==================== */

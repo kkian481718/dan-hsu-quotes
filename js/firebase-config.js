@@ -14,11 +14,17 @@ const firebaseConfig = {
   measurementId: "G-MBYVPBC7B0",
 };
 
+// reCAPTCHA v3 配置
+const RECAPTCHA_SITE_KEY = "6LdNJxcsAAAAAFIHULIlTNOJHNlJGyI7-cAMCSVq"; // 請替換為你的 Site Key
+
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 
 // 取得 Database 參考
 const database = firebase.database();
 const quotesRef = database.ref("quotes");
+
+// 將 reCAPTCHA Site Key 暴露給全域（供 app.js 使用）
+window.RECAPTCHA_SITE_KEY = RECAPTCHA_SITE_KEY;
 
 console.log("✅ Firebase 初始化成功！");

@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 表單提交處理
-  function handleSubmit() {
+  async function handleSubmit() {
     const quote = quoteInput.value.trim();
     const author = authorInput.value.trim();
 
@@ -101,10 +101,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     submitButton.classList.add("loading");
-    submitQuoteToFirebase(quote, author);
+
+    // reCAPTCHA v3 驗證
+    try {
+      const token = await executeRecaptcha();
+      submitQuoteToFirebase(quote, author, token);
+    } catch (error) {
+      console.error("reCAPTCHA 驗證失敗:", error);
+      showToast("❌", "安全驗證失敗，請重新整理頁面後再試", "error");
+      submitButton.classList.remove("loading");
+    }
   }
 
-  function submitQuoteToFirebase(quote, author) {
+  // 執行 reCAPTCHA v3 驗證
+  function executeRecaptcha() {
+    return new Promise((resolve, reject) => {
+      if (typeof grecaptcha === "undefined" || !window.RECAPTCHA_SITE_KEY) {
+        console.warn("reCAPTCHA 未正確載入，跳過驗證");
+        resolve(null);
+        return;
+      }
+
+      grecaptcha.ready(() => {
+        grecaptcha
+          .execute(window.RECAPTCHA_SITE_KEY, { action: "submit_quote" })
+          .then((token) => {
+            console.log("✅ reCAPTCHA token 獲取成功");
+            resolve(token);
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      });
+    });
+  }
+
+  function submitQuoteToFirebase(quote, author, recaptchaToken) {
     showToast("⏳", "正在提交語錄...", "info");
 
     // 建立新的語錄物件
@@ -113,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       author: author,
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       createdAt: new Date().toISOString(),
+      recaptchaToken: recaptchaToken || null, // 包含 reCAPTCHA token（選用）
     };
 
     // 推送到 Firebase
@@ -168,6 +201,33 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  // 時間格式化函數
+  function formatTimestamp(timestamp) {
+    if (!timestamp) return "未知時間";
+
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    // 相對時間顯示
+    if (diffMins < 1) return "剛剛";
+    if (diffMins < 60) return `${diffMins} 分鐘前`;
+    if (diffHours < 24) return `${diffHours} 小時前`;
+    if (diffDays < 7) return `${diffDays} 天前`;
+
+    // 絕對時間顯示
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}/${month}/${day} ${hours}:${minutes}`;
+  }
+
   function displayQuotes(quotes) {
     loadingState.style.display = "none";
 
@@ -184,9 +244,17 @@ document.addEventListener("DOMContentLoaded", () => {
     quotes.forEach((q, index) => {
       const li = document.createElement("li");
       li.style.animationDelay = `${index * 0.1}s`;
+      console.log("Quote data:", q); // 調試用
+      const timeString = formatTimestamp(q.timestamp);
+      console.log("Formatted time:", timeString); // 調試用
       li.innerHTML = `
         <span class="quote-text">${q.quote}</span>
-        <span class="quote-author">${q.author}</span>
+        <div class="quote-footer">
+          <span class="quote-author">${q.author}</span>
+          <span class="quote-time" title="${new Date(
+            q.timestamp
+          ).toLocaleString("zh-TW")}">📅 ${timeString}</span>
+        </div>
       `;
       quotesList.appendChild(li);
     });
