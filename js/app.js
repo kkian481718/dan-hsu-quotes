@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   loadAllQuotes();
   setupEventListeners();
+  checkCooldown();
 
   // 設置事件監聽器
   function setupEventListeners() {
@@ -92,6 +93,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 表單提交處理
   function handleSubmit() {
+    // 檢查冷卻時間
+    const lastSubmitTime = localStorage.getItem("lastSubmitTime");
+    const now = Date.now();
+    const cooldownPeriod = 60000; // 60 秒
+
+    if (lastSubmitTime) {
+      const timePassed = now - parseInt(lastSubmitTime);
+      if (timePassed < cooldownPeriod) {
+        const remainingTime = Math.ceil((cooldownPeriod - timePassed) / 1000);
+        showToast("⏰", `請稍後再試，還需等待 ${remainingTime} 秒`, "warning");
+        return;
+      }
+    }
+
     const quote = quoteInput.value.trim();
     const author = authorInput.value.trim();
 
@@ -124,6 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
         authorInput.value = "";
         updateCharCount();
         submitButton.classList.remove("loading");
+
+        // 記錄提交時間並啟動冷卻計時器
+        localStorage.setItem("lastSubmitTime", Date.now().toString());
+        startCooldown();
+
         // 不需要重新載入，Firebase 的即時監聽器會自動更新
       })
       .catch((error) => {
@@ -224,5 +244,61 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       toast.classList.remove("show");
     }, 3000);
+  }
+
+  // 冷卻時間管理
+  let cooldownInterval = null;
+
+  function checkCooldown() {
+    const lastSubmitTime = localStorage.getItem("lastSubmitTime");
+    if (!lastSubmitTime) return;
+
+    const now = Date.now();
+    const cooldownPeriod = 60000; // 60 秒
+    const timePassed = now - parseInt(lastSubmitTime);
+
+    if (timePassed < cooldownPeriod) {
+      startCooldown(cooldownPeriod - timePassed);
+    }
+  }
+
+  function startCooldown(remainingTime = 60000) {
+    submitButton.classList.add("cooldown");
+    submitButton.disabled = true;
+
+    const progressFill = submitButton.querySelector(".progress-fill");
+    const progressText = submitButton.querySelector(".progress-text");
+    const startTime = Date.now();
+    const endTime = startTime + remainingTime;
+
+    // 清除之前的計時器
+    if (cooldownInterval) {
+      clearInterval(cooldownInterval);
+    }
+
+    function updateProgress() {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = (elapsed / remainingTime) * 100;
+      const remainingSeconds = Math.ceil((endTime - now) / 1000);
+
+      if (progress >= 100) {
+        progressFill.style.width = "100%";
+        progressText.textContent = "可以提交了！";
+
+        setTimeout(() => {
+          submitButton.classList.remove("cooldown");
+          submitButton.disabled = false;
+          clearInterval(cooldownInterval);
+          cooldownInterval = null;
+        }, 500);
+      } else {
+        progressFill.style.width = progress + "%";
+        progressText.textContent = `請等待 ${remainingSeconds} 秒`;
+      }
+    }
+
+    updateProgress();
+    cooldownInterval = setInterval(updateProgress, 100);
   }
 });
