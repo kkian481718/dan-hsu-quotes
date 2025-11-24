@@ -114,28 +114,23 @@ document.addEventListener("DOMContentLoaded", () => {
   async function submitQuoteAsIssue(quote, author) {
     showToast("⏳", "正在提交語錄...", "info");
 
-    // 使用 GitHub repository_dispatch 事件觸發 GitHub Actions
-    // 這樣 token 就安全地存在 GitHub Secrets 中,不會暴露在前端
-    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`;
-
     try {
-      const response = await fetch(apiUrl, {
+      // 使用 Netlify Serverless Function
+      // Token 安全地存在 Netlify 環境變數中
+      const response = await fetch("/.netlify/functions/create-issue", {
         method: "POST",
         headers: {
-          Accept: "application/vnd.github.v3+json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          event_type: "create-quote-issue",
-          client_payload: {
-            quote: quote,
-            author: author,
-          },
+          quote: quote,
+          author: author,
         }),
       });
 
-      // repository_dispatch 成功時返回 204 No Content
-      if (response.status === 204 || response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         showToast("🎉", "語錄已成功提交！", "success");
         quoteInput.value = "";
         authorInput.value = "";
@@ -143,25 +138,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // 重新載入語錄列表
         setTimeout(() => loadAllQuotes(), 1500);
       } else {
-        throw new Error(`提交失敗: ${response.status}`);
+        throw new Error(data.error || "提交失敗");
       }
     } catch (error) {
       console.error("提交失敗:", error);
-
-      // 如果 API 調用失敗,降級使用開啟 GitHub 頁面的方式
-      const issueTitle = `語錄：${quote.substring(0, 50)}${
-        quote.length > 50 ? "..." : ""
-      }`;
-      const issueBody = `**語錄內容：** ${quote}\n\n**投稿者：** ${author}\n\n---\n*此語錄由網頁表單自動提交*`;
-      const issueUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new?title=${encodeURIComponent(
-        issueTitle
-      )}&body=${encodeURIComponent(issueBody)}&labels=${ISSUE_LABEL}`;
-
-      showToast("ℹ️", "正在開啟 GitHub 頁面...", "info");
-      setTimeout(() => {
-        window.open(issueUrl, "_blank");
-        showToast("📝", "請在 GitHub 頁面完成提交", "info");
-      }, 500);
+      showToast("❌", "提交失敗，請稍後再試", "error");
     }
   }
 

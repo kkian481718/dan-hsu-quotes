@@ -1,0 +1,19 @@
+# 環境變數
+.env
+.env.local
+
+# Node modules
+node_modules/
+
+# Netlify
+.netlify/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
