@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 字數統計
   function updateCharCount() {
     const length = quoteInput.value.length;
-    const maxLength = 500;
+    const maxLength = 10000;
     charCount.textContent = `${length} / ${maxLength}`;
 
     if (length > maxLength) {

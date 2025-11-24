@@ -47,7 +47,7 @@ Firebase Rules enforce:
 
 - Public read access (`.read: true`)
 - Public write access with validation (`.write: true` + field constraints)
-- Max quote length: 500 chars, author: 100 chars
+- Max quote length: 10000 chars, author: 100 chars
 - Required fields: `quote`, `author`, `timestamp`, `createdAt`
 
 See `FIREBASE_SETUP.md` for complete rule definitions.
